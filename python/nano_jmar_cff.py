@@ -3,9 +3,9 @@ from PhysicsTools.NanoAOD.nano_cff import *
 from PhysicsTools.NanoAODJMAR.recluster_cff import *
 
 
-nanoSequence += finalJetsAK8Constituents + finalJetsAK8ConstituentsTable
+nanoSequence += finalJetsAK8Constituents + finalJetsAK8ConstituentsTable + nanoJetCollections
 
-nanoSequenceMC += finalJetsAK8Constituents + genJetsAK8Constituents + finalJetsAK8ConstituentsTable + genJetsAK8ParticleTable
+nanoSequenceMC += finalJetsAK8Constituents + genJetsAK8Constituents + finalJetsAK8ConstituentsTable + genJetsAK8ParticleTable + nanoJetCollections
 
 
 

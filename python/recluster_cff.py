@@ -47,3 +47,55 @@ jetReclusterMCSequence = cms.Sequence(genJetsAK8Constituents)
 jetReclusterTable = cms.Sequence(finalJetsAK8ConstituentsTable)
 jetReclusterMCTable = cms.Sequence(genJetsAK8ParticleTable)
 
+from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
+pfCHSCandsNew = cms.EDFilter("CandPtrSelector", src = cms.InputTag("packedPFCandidates"), cut = cms.string("fromPV"))
+
+ak4PFCHSreco = ak4PFJets.clone(src = 'pfCHSCandsNew', jetPtMin=15., rParam       = cms.double(0.4)) 
+ak4jetTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("ak4PFCHSreco"),
+    cut = cms.string(""), #we should not filter on cross linked collections
+    name = cms.string("Jetak4PFCHS"),
+    doc  = cms.string("Jetak4PFCHS, i.e. ak4 PFJets CHS (plain reco, i.e. without JEC applied)"),
+    singleton = cms.bool(False), # the number of entries is variable
+    extension = cms.bool(False), # this is the main table for the jets
+    variables = cms.PSet(P4Vars,
+        area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+    )
+)
+ak4jetTable.variables.pt.precision=10
+
+ak7PFCHSreco = ak4PFJets.clone(src = 'pfCHSCandsNew', jetPtMin=50., rParam       = cms.double(0.7)) 
+ak7jetTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("ak7PFCHSreco"),
+    cut = cms.string(""), #we should not filter on cross linked collections
+    name = cms.string("Jetak7PFCHS"),
+    doc  = cms.string("Jetak7PFCHS, i.e. ak7 PFJets CHS (plain reco, i.e. without JEC applied)"),
+    singleton = cms.bool(False), # the number of entries is variable
+    extension = cms.bool(False), # this is the main table for the jets
+    variables = cms.PSet(P4Vars,
+        area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+    )
+)
+ak7jetTable.variables.pt.precision=10
+
+ak8PFCHSreco = ak4PFJets.clone(src = 'pfCHSCandsNew', jetPtMin=50., rParam       = cms.double(0.8)) 
+ak8jetTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("ak8PFCHSreco"),
+    cut = cms.string(""), #we should not filter on cross linked collections
+    name = cms.string("Jetak8PFCHS"),
+    doc  = cms.string("Jetak8PFCHS, i.e. ak8 PFJets CHS (plain reco, i.e. without JEC applied)"),
+    singleton = cms.bool(False), # the number of entries is variable
+    extension = cms.bool(False), # this is the main table for the jets
+    variables = cms.PSet(P4Vars,
+        area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+    )
+)
+ak8jetTable.variables.pt.precision=10
+
+
+
+ak4Sequence = cms.Sequence(ak4PFCHSreco+ak4jetTable)
+ak7Sequence = cms.Sequence(ak7PFCHSreco+ak7jetTable)
+ak8Sequence = cms.Sequence(ak8PFCHSreco+ak8jetTable)
+
+nanoJetCollections = cms.Sequence(pfCHSCandsNew+ak4Sequence+ak7Sequence+ak8Sequence)
