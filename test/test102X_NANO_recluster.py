@@ -28,7 +28,8 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring('/store/mc/RunIIAutumn18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/80000/FFDCFC59-4ABE-0646-AABE-BD5D65301169.root'),
-    secondaryFileNames = cms.untracked.vstring()
+#                            fileNames = cms.untracked.vstring('file:FFDCFC59-4ABE-0646-AABE-BD5D65301169.root'),
+                            secondaryFileNames = cms.untracked.vstring()
 )
 
 process.options = cms.untracked.PSet(
@@ -41,6 +42,57 @@ process.configurationMetadata = cms.untracked.PSet(
     name = cms.untracked.string('Applications'),
     version = cms.untracked.string('$Revision: 1.19 $')
 )
+
+
+
+##add full pat jets with JEC
+## Filter out neutrinos from packed GenParticles
+process.packedGenParticlesForJetsNoNu = cms.EDFilter("CandPtrSelector", src = cms.InputTag("packedGenParticles"), cut = cms.string("abs(pdgId) != 12 && abs(pdgId) != 14 && abs(pdgId) != 16"))
+## Define GenJets
+from RecoJets.JetProducers.ak4GenJets_cfi import ak4GenJets
+process.ak4GenJetsNoNu = ak4GenJets.clone(src = 'packedGenParticlesForJetsNoNu',  rParam = 0.4)
+
+## Select charged hadron subtracted packed PF candidates
+process.pfCHS = cms.EDFilter("CandPtrSelector", src = cms.InputTag("packedPFCandidates"), cut = cms.string("fromPV"))
+from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
+## Define PFJetsCHS
+process.ak4PFJetsCHS = ak4PFJets.clone(src = 'pfCHS', doAreaFastjet = True, rParam = 0.4)
+
+#################################################
+## Remake PAT jets
+#################################################
+
+## b-tag discriminators
+bTagDiscriminators = [
+    'pfCombinedInclusiveSecondaryVertexV2BJetTags'
+]
+
+from PhysicsTools.PatAlgos.tools.jetTools import *
+## Add PAT jet collection based on the above-defined ak4PFJetsCHS
+addJetCollection(
+    process,
+    labelName = 'AK4PFCHS',
+    jetSource = cms.InputTag('ak4PFJetsCHS'),
+    pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+    pfCandidates = cms.InputTag('packedPFCandidates'),
+    svSource = cms.InputTag('slimmedSecondaryVertices'),
+    btagDiscriminators = bTagDiscriminators,
+    jetCorrections = ('AK4PFchs', ['L1FastJet', 'L2Relative', 'L3Absolute'], 'None'),
+    genJetCollection = cms.InputTag('ak4GenJetsNoNu'),
+    genParticles = cms.InputTag('prunedGenParticles'),
+    algo = 'AK',
+    rParam = 0.4
+)
+
+getattr(process,'selectedPatJetsAK4PFCHS').cut = cms.string('pt > 15')
+
+process.newJetsPath = cms.Path(process.packedGenParticlesForJetsNoNu*process.ak4GenJetsNoNu*process.pfCHS*process.ak4PFJetsCHS*process.selectedPatJetsAK4PFCHS)
+
+from PhysicsTools.PatAlgos.tools.pfTools import *
+## Adapt primary vertex collection
+adaptPVs(process, pvCollection=cms.InputTag('offlineSlimmedPrimaryVertices'))
+
+
 
 # Output definition
 
@@ -66,8 +118,14 @@ process.nanoAOD_step = cms.Path(process.nanoSequenceMC)
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.NANOAODSIMoutput_step = cms.EndPath(process.NANOAODSIMoutput)
 
+
+
+
+
+
+
 # Schedule definition
-process.schedule = cms.Schedule(process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
+process.schedule = cms.Schedule(process.newJetsPath,process.nanoAOD_step,process.endjob_step,process.NANOAODSIMoutput_step)
 from PhysicsTools.PatAlgos.tools.helpers import associatePatAlgosToolsTask
 associatePatAlgosToolsTask(process)
 
@@ -88,3 +146,4 @@ process.add_(cms.Service('InitRootHandlers', EnableIMT = cms.untracked.bool(Fals
 from Configuration.StandardSequences.earlyDeleteSettings_cff import customiseEarlyDelete
 process = customiseEarlyDelete(process)
 # End adding early deletion
+

@@ -99,3 +99,22 @@ ak7Sequence = cms.Sequence(ak7PFCHSreco+ak7jetTable)
 ak8Sequence = cms.Sequence(ak8PFCHSreco+ak8jetTable)
 
 nanoJetCollections = cms.Sequence(pfCHSCandsNew+ak4Sequence+ak7Sequence+ak8Sequence)
+
+
+
+from  PhysicsTools.NanoAOD.common_cff import *
+ak4jetMiniAODTable = cms.EDProducer("SimpleCandidateFlatTableProducer",
+    src = cms.InputTag("selectedPatJetsAK4PFCHS"),
+    cut = cms.string(""), #we should not filter on cross linked collections
+    name = cms.string("PATJetsNewAK4PFCHS"),
+    doc  = cms.string("PATJetsNewAK4PFCHS, i.e. ak4 PFJets CHS (a la miniAOD, so should be the same thing as standard nanoAOD...)"),
+    singleton = cms.bool(False), # the number of entries is variable
+    extension = cms.bool(False), # this is the main table for the jets
+    variables = cms.PSet(P4Vars,
+        area = Var("jetArea()", float, doc="jet catchment area, for JECs",precision=10),
+    )
+)
+ak4jetMiniAODTable.variables.pt.precision=10
+
+
+nanoJetCollections+=cms.Sequence(ak4jetMiniAODTable)
